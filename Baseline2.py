@@ -7,6 +7,22 @@ Author: Ibrahim Bax
 Description to be added
 """
 from enum import Enum, auto
+from dataclasses import dataclass
+
+class GearConfiguration:
+    pump_latency_ms: int
+    actuator_speed_mm_per_100ms: float
+    extension_distance_mm: int
+    lock_time_ms: int
+    requirement_time_ms: int = 8000
+
+BASELINE_CONFIG = GearConfiguration(
+    pump_latency_ms=200,
+    actuator_speed_mm_per_100ms=10.0,
+    extension_distance_mm=700,
+    lock_time_ms=300,
+    requirement_time_ms=8000
+)
 
 class GearState(Enum):
     UP_LOCKED = auto()
@@ -15,9 +31,10 @@ class GearState(Enum):
     TRANSITIONING_UP = auto()
 
 class LandingGearController:
-    def __init__(self):
+    def __init__(self, config: GearConfiguration):
         self.state = GearState.UP_LOCKED
-    
+        self.config = config
+
     def log(self, message):
         print(f"[{self.state.name}] {message}")
 
@@ -30,12 +47,10 @@ class LandingGearController:
         self.state = GearState.TRANSITIONING_DOWN
         self.log("Gear deploying")
 
-        # Instant transition (no timing yet)
         self.state = GearState.DOWN_LOCKED
         self.log("Gear locked DOWN")
         return True
 
-    
     def command_gear_up(self):
         if self.state != GearState.DOWN_LOCKED:
             self.log("Command rejected - invalid state")
