@@ -4,6 +4,7 @@ class GearState(Enum):
     UP_LOCKED = auto()
     TRANSITIONING_DOWN = auto()
     DOWN_LOCKED = auto()
+    TRANSITIONING_UP = auto()
 
 class LandingGearController:
     def __init__(self):
@@ -18,6 +19,15 @@ class LandingGearController:
             self.log("Gear deploying")
             self.state = GearState.DOWN_LOCKED
             self.log("Gear locked down")
+        else:
+            self.log("Command rejected")
+
+    def command_gear_up(self):
+        if self.state == GearState.DOWN_LOCKED:
+            self.state = GearState.TRANSITIONING_UP
+            self.log("Gear Retracting")
+            self.state = GearState.UP_LOCKED
+            self.log("Gear locked up")
         else:
             self.log("Command rejected")
 
