@@ -1,14 +1,8 @@
-"""
-BAE Systems Landing Gear Control System
-Baseline v2.0 - IN PROGRESS
-Date: xxxxx
-Author: Ibrahim Bax
-
-Description to be added
-"""
 from enum import Enum, auto
 from dataclasses import dataclass
+import time
 
+@dataclass
 class GearConfiguration:
     pump_latency_ms: int
     actuator_speed_mm_per_100ms: float
@@ -34,6 +28,7 @@ class LandingGearController:
     def __init__(self, config: GearConfiguration):
         self.state = GearState.UP_LOCKED
         self.config = config
+        self.deployment_time_ms = 0
 
     def log(self, message):
         print(f"[{self.state.name}] {message}")
@@ -45,24 +40,30 @@ class LandingGearController:
 
         self.log("Command received: GEAR DOWN")
         self.state = GearState.TRANSITIONING_DOWN
-        self.log("Gear deploying")
+        self.deployment_time_ms = 0
+
+        # Pump
+        time.sleep(self.config.pump_latency_ms / 1000)
+        self.deployment_time_ms += self.config.pump_latency_ms
+        self.log("Hydraulic pump active")
+
+        # Actuator
+        speed = self.config.actuator_speed_mm_per_100ms / 100.0
+        extension_time = int(self.config.extension_distance_mm / speed)
+        time.sleep(extension_time / 1000)
+        self.deployment_time_ms += extension_time
+        self.log("Actuator extending")
+
+        # Lock
+        time.sleep(self.config.lock_time_ms / 1000)
+        self.deployment_time_ms += self.config.lock_time_ms
+        self.log("Down-lock engaged")
 
         self.state = GearState.DOWN_LOCKED
-        self.log("Gear locked DOWN")
+        self.log(f"Gear locked DOWN ({self.deployment_time_ms}ms)")
         return True
 
-    def command_gear_up(self):
-        if self.state != GearState.DOWN_LOCKED:
-            self.log("Command rejected - invalid state")
-            return False
 
-        self.log("Command received: GEAR UP")
-        self.state = GearState.TRANSITIONING_UP
-        self.log("Gear retracting")
-
-        self.state = GearState.UP_LOCKED
-        self.log("Gear locked UP")
-        return True
-
-controller = LandingGearController()
+# Demo
+controller = LandingGearController(BASELINE_CONFIG)
 controller.command_gear_down()
