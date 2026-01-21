@@ -1,3 +1,12 @@
+"""
+BAE Systems Landing Gear Control System
+Baseline v1.0 - Initial Proof of Concept
+Date: xxxxx
+Author: Ibrahim Bax
+
+Initial simple state machine demonstrating basic state transitions.
+This proves the concept works before adding complexity.
+"""
 from enum import Enum, auto
 
 class GearState(Enum):
