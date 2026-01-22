@@ -46,6 +46,9 @@ class LandingGearController:
     def log(self, message):
         print(f"[{self.state.name}] {message}")
 
+    def _timing_within_requirement(self):
+        return self.deployment_time_ms <= self.config.requirement_time_ms
+
     def command_gear_down(self):
         """Deploy landing gear with timing simulation"""
         if self.state != GearState.UP_LOCKED:
