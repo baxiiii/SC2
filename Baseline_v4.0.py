@@ -11,6 +11,16 @@ from enum import Enum, auto
 from dataclasses import dataclass
 import time
 
+
+# COMMERCIAL TOOL: matplotlib for visualization
+try:
+    import matplotlib.pyplot as plt
+    VISUALIZATION_AVAILABLE = True
+except ImportError:
+    VISUALIZATION_AVAILABLE = False
+    print("Note: matplotlib not available - visualization disabled")
+
+    
 # LEGACY COMPONENT: Configuration from simulation baseline
 @dataclass
 class GearConfiguration:
