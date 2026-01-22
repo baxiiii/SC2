@@ -1,16 +1,25 @@
 """
 BAE Systems Landing Gear Control System
-Baseline v3.0 -  QA Improvement
+Baseline v4.0 - Final Version
 Date: 
-Author: 
+Author: Ibrahim bax
 
+Additional QA-Driven Improvements from v3.0:
+- Timeline tracking for complete audit trail
+- Visual verification outputs (matplotlib integration)
+- Enhanced observability through charting
+- Comprehensive event logging
 
+Rationale (Kaizen - Continuous Improvement):
+v3.0 provided real-time monitoring but lacked visual verification
+tools. v4.0 adds timeline visualization to improve observability
+and support verification reviews. This implements Kaizen principle
+of continuous incremental improvement.
 """
 
 from enum import Enum, auto
 from dataclasses import dataclass
 import time
-
 
 # COMMERCIAL TOOL: matplotlib for visualization
 try:
@@ -20,7 +29,6 @@ except ImportError:
     VISUALIZATION_AVAILABLE = False
     print("Note: matplotlib not available - visualization disabled")
 
-    
 # LEGACY COMPONENT: Configuration from simulation baseline
 @dataclass
 class GearConfiguration:
@@ -52,46 +60,48 @@ class LandingGearController:
         self.config = config
         self.deployment_time_ms = 0
         self.fault_detected = False
-
-        self.timeline = []
-
+        self.timeline = []  # NEW in v4.0: Event timeline tracking
+    
     def log(self, message):
         print(f"[{self.state.name}] {message}")
     
+    def _record_event(self, event: str):
+        """NEW in v4.0: Record timeline for audit trail"""
+        self.timeline.append({
+            'time_ms': self.deployment_time_ms,
+            'state': self.state.name,
+            'event': event
+        })
+    
     def _check_requirement(self):
-        """
-        NEW in v3.0: Real-time requirement monitoring.
-        Implements Lean principle: detect problems early.
-        """
+        """Real-time requirement monitoring (from v3.0)"""
         if self.deployment_time_ms > self.config.requirement_time_ms:
             self.log(f"REQUIREMENT BREACH: {self.deployment_time_ms}ms > {self.config.requirement_time_ms}ms")
             self.state = GearState.FAILURE_DETECTED
             self.fault_detected = True
-            self._record_event("Requirement breach detected")  # NEW
-
+            self._record_event("Requirement breach detected")
             return False
         
-        # Log progress
-        self._record_event("Requirement check passed") 
+        margin = self.config.requirement_time_ms - self.deployment_time_ms
+        self.log(f"✓ Requirement check PASSED ({self.deployment_time_ms}ms / {self.config.requirement_time_ms}ms, margin: {margin}ms)")
         return True
 
     def command_gear_down(self):
-        """Deploy landing gear with continuous monitoring"""
-        # Edge case: Already deployed
+        """Deploy landing gear with full monitoring and tracking"""
+        # Edge case handling
         if self.state == GearState.DOWN_LOCKED:
             self.log("Command rejected - gear already down")
             return False
         
-        # Edge case: Invalid state
         if self.state not in [GearState.UP_LOCKED]:
             self.log("Command rejected - invalid state for deployment")
             return False
         
         self.log("Command received: GEAR DOWN")
         self.deployment_time_ms = 0
-        self.timeline = []  
-
         self.fault_detected = False
+        self.timeline = []  # Reset timeline
+        self._record_event("Deployment command issued")
         
         # Phase 1: Hydraulic pump activation
         self.state = GearState.TRANSITIONING_DOWN
@@ -99,8 +109,8 @@ class LandingGearController:
         self.log(f"Hydraulic pump activating ({pump_time}ms)")
         time.sleep(pump_time / 1000)
         self.deployment_time_ms += pump_time
+        self._record_event(f"Pump ready ({pump_time}ms)")
         
-        # NEW: Check requirement after pump phase
         if not self._check_requirement():
             return False
         
@@ -110,8 +120,8 @@ class LandingGearController:
         self.log(f"Actuator extending ({extension_time}ms)")
         time.sleep(extension_time / 1000)
         self.deployment_time_ms += extension_time
+        self._record_event(f"Extension complete ({extension_time}ms)")
         
-        # NEW: Check requirement after extension
         if not self._check_requirement():
             return False
         
@@ -120,15 +130,16 @@ class LandingGearController:
         self.log(f"Engaging down-lock ({lock_time}ms)")
         time.sleep(lock_time / 1000)
         self.deployment_time_ms += lock_time
+        self._record_event(f"Lock engaged ({lock_time}ms)")
         
-        # NEW: Final requirement check
         if not self._check_requirement():
             return False
         
-        # Success - transition to locked
+        # Success
         self.state = GearState.DOWN_LOCKED
         margin = self.config.requirement_time_ms - self.deployment_time_ms
         self.log(f"Deployment SUCCESSFUL - Total: {self.deployment_time_ms}ms (Margin: {margin}ms)")
+        self._record_event("Deployment complete - SUCCESS")
         
         return True
 
@@ -140,18 +151,56 @@ class LandingGearController:
         
         self.log("Command received: GEAR UP")
         self.state = GearState.TRANSITIONING_UP
-        self._record_event("GEAR UP command received")  
         self.log("Gear retracting")
         self.state = GearState.UP_LOCKED
-        self._record_event("Gear locked UP")  
-
         self.log("Gear locked UP")
         return True
+    
+    def generate_timeline_visualization(self):
+        """
+        NEW in v4.0: Visual verification output
+        Implements Kaizen: improve observability and verification
+        """
+        if not VISUALIZATION_AVAILABLE:
+            print("Visualization not available - skipping chart generation")
+            return
+        
+        if not self.timeline:
+            print("No timeline data available")
+            return
+        
+        times = [entry['time_ms'] for entry in self.timeline]
+        events = [entry['event'] for entry in self.timeline]
+        
+        fig, ax = plt.subplots(figsize=(12, 6))
+        ax.plot(times, range(len(times)), 'bo-', linewidth=2, markersize=10)
+        
+        # Highlight requirement boundary
+        ax.axvline(x=self.config.requirement_time_ms, color='red', 
+                   linestyle='--', linewidth=2, label=f'Requirement ({self.config.requirement_time_ms}ms)')
+        
+        # Add event labels
+        for i, (t, event) in enumerate(zip(times, events)):
+            ax.annotate(event, (t, i), xytext=(10, 0), 
+                       textcoords='offset points', fontsize=9, 
+                       bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.7))
+        
+        ax.set_xlabel('Time (milliseconds)', fontsize=12, fontweight='bold')
+        ax.set_ylabel('Event Sequence', fontsize=12, fontweight='bold')
+        ax.set_title('Landing Gear Deployment Timeline - Baseline v4.0', 
+                     fontsize=14, fontweight='bold')
+        ax.legend(fontsize=10)
+        ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        plt.savefig('deployment_timeline_v4.png', dpi=150, bbox_inches='tight')
+        print("\n✓ Timeline visualization saved to 'deployment_timeline_v4.png'")
+        plt.show()
 
-# QA Improvement Demonstration
+# Final Demonstration
 print("="*70)
-print("BAE Systems Landing Gear - Baseline v3.0  QA Improvement)")
-print("Real-Time Monitoring Implementation")
+print("BAE Systems Landing Gear - Baseline v4.0 (Week 7 Final)")
+print("Enhanced Verification with Visualization")
 print("="*70)
 print()
 
@@ -160,7 +209,7 @@ success = controller.command_gear_down()
 
 print()
 print("="*70)
-print("VERIFICATION REPORT")
+print("COMPREHENSIVE VERIFICATION REPORT")
 print("="*70)
 print(f"Final State: {controller.state.name}")
 print(f"Deployment Time: {controller.deployment_time_ms}ms ({controller.deployment_time_ms/1000:.2f}s)")
@@ -168,16 +217,25 @@ print(f"Requirement: {BASELINE_CONFIG.requirement_time_ms}ms ({BASELINE_CONFIG.r
 
 if success and not controller.fault_detected:
     margin = BASELINE_CONFIG.requirement_time_ms - controller.deployment_time_ms
-    print(f"Margin: {margin}ms")
+    print(f"Margin: {margin}ms ({(margin/BASELINE_CONFIG.requirement_time_ms)*100:.1f}% safety buffer)")
     print()
     print("DEPLOYMENT SUCCESSFUL")
     print("   - All phases completed within requirement")
     print("   - Continuous monitoring confirmed compliance")
-    print("   - No faults detected")
+    print("   - Complete audit trail available")
+    print("   - Visual verification generated")
 else:
     print()
     print("DEPLOYMENT FAILED")
-    print("   - Requirement breach detected during deployment")
+    print("   - Requirement breach detected")
     print("   - System entered FAILURE_DETECTED state")
-    print("   - Manual intervention required")
+
+print()
+print("--- Event Timeline (Audit Trail) ---")
+for entry in controller.timeline:
+    print(f"  t={entry['time_ms']:5d}ms  [{entry['state']:20s}]  {entry['event']}")
+
+print()
+print("--- Generating Visual Verification ---")
+controller.generate_timeline_visualization()
 print()
