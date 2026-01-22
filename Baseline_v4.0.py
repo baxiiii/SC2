@@ -4,17 +4,7 @@ Baseline v3.0 -  QA Improvement
 Date: 
 Author: 
 
-QA-Driven Improvements from v2.0:
-- Real-time requirement monitoring (Lean: early defect detection)
-- Continuous validation during deployment phases
-- Enhanced edge case handling
-- Improved fault detection and state management
 
-Rationale (PDCA CHECK Phase):
-v2.0 review identified that requirement checking only occurred
-AFTER deployment completed. This violated Lean principle of
-detecting defects as early as possible. v3.0 implements continuous
-monitoring to detect timing violations immediately.
 """
 
 from enum import Enum, auto
@@ -52,7 +42,9 @@ class LandingGearController:
         self.config = config
         self.deployment_time_ms = 0
         self.fault_detected = False
-    
+
+        self.timeline = []
+
     def log(self, message):
         print(f"[{self.state.name}] {message}")
     
@@ -65,11 +57,12 @@ class LandingGearController:
             self.log(f"REQUIREMENT BREACH: {self.deployment_time_ms}ms > {self.config.requirement_time_ms}ms")
             self.state = GearState.FAILURE_DETECTED
             self.fault_detected = True
+            self._record_event("Requirement breach detected")  # NEW
+
             return False
         
         # Log progress
-        margin = self.config.requirement_time_ms - self.deployment_time_ms
-        self.log(f"✓ Requirement check PASSED ({self.deployment_time_ms}ms / {self.config.requirement_time_ms}ms, margin: {margin}ms)")
+        self._record_event("Requirement check passed") 
         return True
 
     def command_gear_down(self):
@@ -86,6 +79,8 @@ class LandingGearController:
         
         self.log("Command received: GEAR DOWN")
         self.deployment_time_ms = 0
+        self.timeline = []  
+
         self.fault_detected = False
         
         # Phase 1: Hydraulic pump activation
@@ -135,8 +130,11 @@ class LandingGearController:
         
         self.log("Command received: GEAR UP")
         self.state = GearState.TRANSITIONING_UP
+        self._record_event("GEAR UP command received")  
         self.log("Gear retracting")
         self.state = GearState.UP_LOCKED
+        self._record_event("Gear locked UP")  
+
         self.log("Gear locked UP")
         return True
 
