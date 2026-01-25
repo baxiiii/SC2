@@ -1,8 +1,8 @@
 """
 BAE Systems Landing Gear Control System
 Baseline v3.0 -  QA Improvement
-Date: 
-Author: 
+Date: 14/01/2025
+Author: Ibrahim Bax
 
 QA-Driven Improvements from v2.0:
 - Real-time requirement monitoring (Lean: early defect detection)

@@ -1,7 +1,7 @@
 """
 BAE Systems Landing Gear Control System
 Baseline v1.0 - Initial Proof of Concept
-Date: xxxxx
+Date: 01/01/2025
 Author: Ibrahim Bax
 
 Initial simple state machine demonstrating basic state transitions.
