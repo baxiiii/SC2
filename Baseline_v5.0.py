@@ -100,7 +100,7 @@ class LandingGearController:
         """Real-time requirement monitoring"""
         if self.deployment_time_ms > self.config.requirement_time_ms:
             self.log(
-                f"⚠️  REQUIREMENT BREACH: "
+                f"REQUIREMENT BREACH: "
                 f"{self.deployment_time_ms}ms > {self.config.requirement_time_ms}ms"
             )
             self.state = GearState.FAILURE_DETECTED
@@ -168,7 +168,7 @@ class LandingGearController:
         self.state = GearState.DOWN_LOCKED
         margin = self.config.requirement_time_ms - self.deployment_time_ms
         self.log(
-            f"✅ Deployment SUCCESSFUL - Total: "
+            f"Deployment SUCCESSFUL - Total: "
             f"{self.deployment_time_ms}ms (Margin: {margin}ms)"
         )
         self._record_event("Deployment complete - SUCCESS")
@@ -202,10 +202,10 @@ class TestResults:
         self.tests_run += 1
         if passed:
             self.tests_passed += 1
-            status = "✅ PASS"
+            status = "PASS"
         else:
             self.tests_failed += 1
-            status = "❌ FAIL"
+            status = "FAIL"
 
         self.results.append({
             "name": name,
